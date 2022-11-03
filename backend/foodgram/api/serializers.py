@@ -1,16 +1,11 @@
-import datetime
-
 from django.db import transaction
 from django.db.models import Q
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
 
 from foods.models import (Favorites, Follow, Ingredient, IngredientsAmount,
                           PurchaseList, Recipe, Tag, User, username_validator)
-
-
-def current_year():
-    return datetime.date.today().year
 
 
 class UserLoginSerializers(serializers.ModelSerializer):
@@ -27,11 +22,7 @@ class UserLoginSerializers(serializers.ModelSerializer):
     def validate(self, data):
         email = data['email']
         password = data['password']
-        user_queryset = (
-            User.objects.filter(Q(email__iexact=email) | (
-                Q(username__iexact=email)).distinct()
-                )
-        )
+        user_queryset = User.objects.filter(Q(email__iexact=email) | Q(username__iexact=email)).distinct()
         if user_queryset.exists() and user_queryset.count() == 1:
             user_set = user_queryset.first()
             if user_set.password == password:
@@ -76,10 +67,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         current_user = self.context['request'].user.id
-        if Follow.objects.filter(user_id=current_user, author_id=obj.id):
-            return "True"
-        else:
-            return "False"
+        return Follow.objects.filter(user_id=current_user, author_id=obj.id).exists()
 
     def create(self, validated_data):
         user = User.objects.create(
@@ -108,10 +96,7 @@ class SpecificUserSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         current_user = self.context['request'].user.id
-        if Follow.objects.filter(user_id=current_user, author_id=obj.id):
-            return "True"
-        else:
-            return "False"
+        return Follow.objects.filter(user_id=current_user, author_id=obj.id).exists()
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -229,6 +214,11 @@ class RecipePostUpdateSerializer(serializers.ModelSerializer):
         read_only=False,
         many=True,
         required=True,
+        validators=(UniqueValidator(
+            queryset=Ingredient.objects.all(),
+            message='Нельзя использовать одинаковые ингредиенты',
+            ),
+        ),
     )
     is_favorited = serializers.SerializerMethodField(
         method_name='get_is_favorited',
@@ -352,10 +342,7 @@ class FollowSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         current_user = self.context['request'].user.id
-        if Follow.objects.filter(user_id=current_user, author_id=obj.id):
-            return "True"
-        else:
-            return "False"
+        return Follow.objects.filter(user_id=current_user, author_id=obj.id).exists()
 
     def get_recipes(self, user):
         recipes_limit = self.context.get('request').query_params.get(

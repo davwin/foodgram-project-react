@@ -1,5 +1,6 @@
 from django.db.models import Sum
 from django.http import FileResponse, Http404, HttpResponse
+from django.shortcuts import get_object_or_404
 from knox.auth import AuthToken
 from rest_framework import filters, generics, mixins, status, viewsets
 from rest_framework.decorators import action, api_view
@@ -10,8 +11,6 @@ from rest_framework.views import APIView
 
 from foods.models import (Favorites, Follow, Ingredient, IngredientsAmount,
                           PurchaseList, Recipe, Tag, User)
-
-from .permissions import IsAdmin, ReadOnly
 from .serializers import (ChangePasswordSerializer, FollowSerializer,
                           IngredientSerializer, RecipeListRetrieveSerializer,
                           RecipePostUpdateSerializer, RecipePurchaseSerializer,
@@ -24,7 +23,7 @@ def login_api(request):
     serializer = UserLoginSerializers(data=request.data)
     serializer.is_valid(raise_exception=True)
     email = serializer.validated_data['email']
-    user = User.objects.get(email=email)
+    user = get_object_or_404(User, email=email)
     _, token = AuthToken.objects.create(user)
 
     return Response({
@@ -32,12 +31,11 @@ def login_api(request):
     })
 
 
-@api_view(['GET'])
-def user_personal_page(request):
+@api_view(['GET']) 
+def user_personal_page(request): 
     user = request.user
-
     if user.is_authenticated:
-        if Follow.objects.filter(user=user, following=user):
+        if Follow.objects.filter(user=user, author=user):
             return Response({'error': 'subscirption_is_wrong'}, status=400)
         else:
             is_subscribed = "False"
@@ -52,7 +50,7 @@ def user_personal_page(request):
     return Response({'error': 'not authenticted'}, status=400)
 
 
-class SpecificUserView(APIView):
+class SpecificUserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_object(self, pk):
@@ -71,25 +69,21 @@ class SpecificUserView(APIView):
             return Response(serializer.data)
 
 
-class ChangePasswordView(generics.CreateAPIView):
+class ChangePasswordViewSet(viewsets.ModelViewSet):
     serializer_class = ChangePasswordSerializer
-    model = User
+    queryset = User.objects.all()
     permission_classes = (IsAuthenticated,)
 
-    def get_object(self, queryset=None):
-        obj = self.request.user
-        return obj
-
     def create(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        serializer = self.get_serializer(data=request.data)
+        user = request.user
+        serializer = self.serializer_class(data=request.data)
 
         if serializer.is_valid():
-            if self.object.password != serializer.data.get("current_password"):
+            if user.password != serializer.data.get("current_password"):
                 return Response({"current_password": ["Wrong password."]},
                                 status=status.HTTP_400_BAD_REQUEST)
-            self.object.password = serializer.data.get("new_password")
-            self.object.save()
+            user.password = serializer.data.get("new_password")
+            user.save()
             return HttpResponse(status=204)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -158,6 +152,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 class ShoppingCartViewSet(viewsets.ModelViewSet):
     queryset = PurchaseList.objects.all()
     serializer_class = RecipePurchaseSerializer
+    permission_classes = (IsAuthenticated,)
 
     def create(self, request, **kwargs):
         recipe_id = kwargs.get('recipe_id')
@@ -178,6 +173,7 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
 class FavoriteViewSet(viewsets.ModelViewSet):
     queryset = Favorites.objects.all()
     serializer_class = RecipePurchaseSerializer
+    permission_classes = (IsAuthenticated,)
 
     def create(self, request, **kwargs):
         recipe_id = kwargs.get('recipe_id')
@@ -199,6 +195,7 @@ class FavoriteViewSet(viewsets.ModelViewSet):
 class FollowViewSet(viewsets.ModelViewSet):
     queryset = Follow.objects.all()
     serializer_class = FollowSerializer
+    permission_classes = (IsAuthenticated,)
 
     def create(self, request, **kwargs):
         user_id = kwargs.get('user_id')
