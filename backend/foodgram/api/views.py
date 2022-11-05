@@ -5,7 +5,7 @@ from foods.models import (Favorite, Follow, Ingredient, IngredientsAmount,
                           PurchaseList, Recipe, Tag, User)
 from knox.auth import AuthToken
 from rest_framework import filters, mixins, status, viewsets
-from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.decorators import action, api_view
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
@@ -16,7 +16,6 @@ from .serializers import (ChangePasswordSerializer, FollowSerializer,
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
 def login_api(request):
     serializer = UserLoginSerializers(data=request.data)
     serializer.is_valid(raise_exception=True)
