@@ -68,14 +68,13 @@ class UserSerializer(serializers.ModelSerializer):
             user_id=current_user, author_id=obj.id).exists()
 
     def create(self, validated_data):
-        user = User.objects.create(
+        return User.objects.create(
             username=validated_data['username'],
             email=validated_data['email'],
             first_name=validated_data['first_name'],
             last_name=validated_data['last_name'],
             password=validated_data['password']
         )
-        return user
 
 
 class SpecificUserSerializer(serializers.ModelSerializer):
@@ -357,5 +356,4 @@ class FollowSerializer(serializers.ModelSerializer):
         return serializer.data
 
     def get_recipes_count(self, obj):
-        count = Recipe.objects.filter(author_id=obj.id).count()
-        return count
+        return Recipe.objects.filter(author_id=obj.id).count()
