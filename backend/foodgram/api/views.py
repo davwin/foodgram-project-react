@@ -40,8 +40,7 @@ class UserViewSet(viewsets.ModelViewSet):
             url_path='me',
             detail=False,)
     def me(self, request, *args, **kwargs):
-        self.object = get_object_or_404(User, pk=request.user.id)
-        serializer = self.get_serializer(self.object)
+        serializer = self.get_serializer(request.user)
         return Response(serializer.data)
 
 
@@ -111,7 +110,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return response
 
 
-class Cart_And_FavoritesMixin:
+class CartAndFavoritesMixin:
     def create(self, request, **kwargs):
         recipe_id = kwargs.get('recipe_id')
         recipe = get_object_or_404(Recipe, id=recipe_id)
@@ -128,13 +127,13 @@ class Cart_And_FavoritesMixin:
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class ShoppingCartViewSet(Cart_And_FavoritesMixin, viewsets.ModelViewSet):
+class ShoppingCartViewSet(CartAndFavoritesMixin, viewsets.ModelViewSet):
     queryset = PurchaseList.objects.all()
     serializer_class = RecipePurchaseSerializer
     permission_classes = (IsAuthenticated,)
 
 
-class FavoriteViewSet(Cart_And_FavoritesMixin, viewsets.ModelViewSet):
+class FavoriteViewSet(CartAndFavoritesMixin, viewsets.ModelViewSet):
     queryset = Favorite.objects.all()
     serializer_class = RecipePurchaseSerializer
     permission_classes = (IsAuthenticated,)

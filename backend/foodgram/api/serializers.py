@@ -3,7 +3,6 @@ from django.db.models import Q
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
-
 from foods.models import (Favorite, Follow, Ingredient, IngredientsAmount,
                           PurchaseList, Recipe, Tag, User, username_validator)
 
@@ -231,8 +230,8 @@ class RecipePostUpdateSerializer(serializers.ModelSerializer):
 
     def validate_ingredients(self, value):
         arr = []
-        for name in range(len(value)):
-            arr.append(value[name]['name'])
+        for name in value:
+            arr.append(name['name'])
         myunique = set(arr)
         if len(myunique) != len(arr):
             raise serializers.ValidationError('Ошибка-одинаковые ингредиенты.')
@@ -270,6 +269,9 @@ class RecipePostUpdateSerializer(serializers.ModelSerializer):
             user=user,
             recipe=recipe,
         ).exists()
+# вот тут у меня вопрос. я вчера часа 3 пытался достать id ингредиентов
+# после bulk_create, но т.к. не получилось, я добавил эту логику
+# т.к. в ingredient_amount оставался список без ИДов
 
     def add_or_edit_ingredients(self, recipe, ingredients):
         max_id = int(IngredientsAmount.objects.latest('pk').pk)
