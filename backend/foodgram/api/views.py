@@ -6,7 +6,7 @@ from foods.models import (Favorite, Follow, Ingredient, IngredientsAmount,
 from knox.auth import AuthToken
 from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action, api_view
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .serializers import (ChangePasswordSerializer, FollowSerializer,
