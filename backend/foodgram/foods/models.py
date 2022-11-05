@@ -103,13 +103,14 @@ class IngredientsAmount(models.Model):
     amount = models.PositiveSmallIntegerField(
         verbose_name='Количество',
     )
+    recipe = models.PositiveIntegerField(unique=True, null=False)
 
     class Meta:
         verbose_name = 'Кол-во ингредиентов'
         verbose_name_plural = 'Кол-во ингредиентов'
 
     def __str__(self):
-        return f'{self.name} - {self.amount}'
+        return f'{self.name} - {self.amount} - {self.recipe}'
 
 
 class Recipe(models.Model):

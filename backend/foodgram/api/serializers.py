@@ -229,11 +229,11 @@ class RecipePostUpdateSerializer(serializers.ModelSerializer):
     author = SpecificUserSerializer(read_only=True, many=False)
 
     def validate_ingredients(self, value):
-        arr = []
-        for name in value:
-            arr.append(name['name'])
-        myunique = set(arr)
-        if len(myunique) != len(arr):
+        ingredients = []
+        for ingredient in value:
+            ingredients.append(ingredient['name'])
+        ingredients_set = set(ingredients)
+        if len(ingredients_set) != len(ingredients):
             raise serializers.ValidationError('Ошибка-одинаковые ингредиенты.')
         return value
 
@@ -269,20 +269,17 @@ class RecipePostUpdateSerializer(serializers.ModelSerializer):
             user=user,
             recipe=recipe,
         ).exists()
-# вот тут у меня вопрос. я вчера часа 3 пытался достать id ингредиентов
-# после bulk_create, но т.к. не получилось, я добавил эту логику
-# т.к. в ingredient_amount оставался список без ИДов
 
     def add_or_edit_ingredients(self, recipe, ingredients):
-        max_id = int(IngredientsAmount.objects.latest('pk').pk)
         ingredient_amount = [
             IngredientsAmount(name=ingredient['name'],
                               amount=ingredient['amount'],
+                              recipe=recipe.id
                               ) for ingredient in ingredients]
         ingredient_amount = IngredientsAmount.objects.bulk_create(
             ingredient_amount)
-        for i in range(1, (len(ingredients)+1)):
-            recipe.ingredients.add(max_id+i)
+        for i in range(len(ingredients)):
+            recipe.ingredients.add(ingredient_amount[i].recipe)
         recipe.save()
 
     @transaction.atomic
