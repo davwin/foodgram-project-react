@@ -1,10 +1,9 @@
 from django.db import transaction
 from django.db.models import Q
 from drf_extra_fields.fields import Base64ImageField
-from rest_framework import serializers
-
 from foods.models import (Favorite, Follow, Ingredient, IngredientsAmount,
                           PurchaseList, Recipe, Tag, User, username_validator)
+from rest_framework import serializers
 
 
 class UserLoginSerializers(serializers.ModelSerializer):
@@ -21,7 +20,10 @@ class UserLoginSerializers(serializers.ModelSerializer):
     def validate(self, data):
         email = data['email']
         password = data['password']
-        user_queryset = User.objects.filter(Q(email__iexact=email) | Q(username__iexact=email)).distinct()
+        user_queryset = (
+            User.objects.filter(Q(email__iexact=email) | Q(
+                username__iexact=email)).distinct()
+        )
         if user_queryset.exists() and user_queryset.count() == 1:
             user_set = user_queryset.first()
             if user_set.password == password:
@@ -57,12 +59,8 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['email', 'id', 'username',
                   'password', 'first_name', 'last_name',
                   'is_subscribed']
-        extra_kwargs = {
-                        'password': {
-                            'write_only': True,
-                            'min_length': 4
-                        }
-        }
+        extra_kwargs = {'password': {
+            'write_only': True, 'min_length': 4}}
 
     def get_is_subscribed(self, obj):
         current_user = self.context['request'].user.id
@@ -87,12 +85,8 @@ class SpecificUserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['email', 'id', 'username',
                   'first_name', 'last_name', 'is_subscribed']
-        extra_kwargs = {
-                        'password': {
-                            'write_only': True,
-                            'min_length': 4
-                        }
-        }
+        extra_kwargs = {'password': {
+            'write_only': True, 'min_length': 4}}
 
     def get_is_subscribed(self, obj):
         current_user = self.context['request'].user.id

@@ -1,19 +1,18 @@
 from django.db.models import Sum
 from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404
+from foods.models import (Favorite, Follow, Ingredient, IngredientsAmount,
+                          PurchaseList, Recipe, Tag, User)
 from knox.auth import AuthToken
 from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action, api_view
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from foods.models import (Favorite, Follow, Ingredient, IngredientsAmount,
-                          PurchaseList, Recipe, Tag, User)
 from .serializers import (ChangePasswordSerializer, FollowSerializer,
                           IngredientSerializer, RecipeListRetrieveSerializer,
                           RecipePostUpdateSerializer, RecipePurchaseSerializer,
-                          TagSerializer,
-                          UserLoginSerializers, UserSerializer)
+                          TagSerializer, UserLoginSerializers, UserSerializer)
 
 
 @api_view(['POST'])
@@ -101,13 +100,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
             recipes__recipe_cart__user=user).values(
                 'name__name', 'name__measurement_unit').annotate(
                     purchase_amount=Sum('amount'))
-        response = FileResponse(
+        return FileResponse(
             bubbba,
             content_type="text/plain",
             as_attachment=True,
             filename="purchase_list.txt",
         )
-        return response
 
 
 class CartAndFavoritesMixin:

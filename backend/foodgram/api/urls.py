@@ -20,10 +20,10 @@ router_v1.register(r'recipes/(?P<recipe_id>\d+)/favorite',
 router_v1.register(r'tags', TagViewSet, basename='tags')
 router_v1.register(
     r'users/subscriptions', FollowViewSet, basename='subscriptions'
-    )
+)
 router_v1.register(
     r'users/(?P<user_id>\d+)/subscribe', FollowViewSet, basename='subscribe'
-    )
+)
 router_v1.register(r'ingredients', IngredientViewSet, basename='ingredients')
 
 urlpatterns = [

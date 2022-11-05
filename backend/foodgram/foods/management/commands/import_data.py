@@ -2,7 +2,6 @@ import csv
 
 from django.conf import settings
 from django.core.management import BaseCommand
-
 from foods.models import Ingredients
 
 TABLES_DICT = {
