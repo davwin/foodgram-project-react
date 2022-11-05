@@ -28,8 +28,7 @@ class UserLoginSerializers(serializers.ModelSerializer):
             user_set = user_queryset.first()
             if user_set.password == password:
                 return data
-            else:
-                raise serializers.ValidationError("Incorrect Password!")
+            raise serializers.ValidationError("Incorrect Password!")
         raise serializers.ValidationError("Not Valid Email!")
 
 
