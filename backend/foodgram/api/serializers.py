@@ -30,9 +30,7 @@ class UserLoginSerializers(serializers.ModelSerializer):
                 return data
             else:
                 raise serializers.ValidationError("Incorrect Password!")
-
-        else:
-            raise serializers.ValidationError("Not Valid Email!")
+        raise serializers.ValidationError("Not Valid Email!")
 
 
 class ChangePasswordSerializer(serializers.Serializer):
