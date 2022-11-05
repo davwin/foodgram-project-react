@@ -7,7 +7,7 @@ services:
     env_file:
       - ./.env
   web:
-    image: davwin95/yamdb_final:latest
+    image: davwin95/foodgram:latest
     restart: always
     volumes:
       - static_value:/app/static/
@@ -18,7 +18,7 @@ services:
       - ./.env
   frontend:
     build:
-      context: ./frontend
+      context: ../frontend
       dockerfile: Dockerfile
     volumes:
       - ../frontend/:/app/result_build/
