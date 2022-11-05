@@ -1,20 +1,18 @@
 from django.db.models import Sum
-from django.http import FileResponse, Http404, HttpResponse
+from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 from knox.auth import AuthToken
-from rest_framework import filters, generics, mixins, status, viewsets
+from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action, api_view
-from rest_framework.permissions import (SAFE_METHODS, BasePermission,
-                                        IsAuthenticated)
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
-from foods.models import (Favorites, Follow, Ingredient, IngredientsAmount,
+from foods.models import (Favorite, Follow, Ingredient, IngredientsAmount,
                           PurchaseList, Recipe, Tag, User)
 from .serializers import (ChangePasswordSerializer, FollowSerializer,
                           IngredientSerializer, RecipeListRetrieveSerializer,
                           RecipePostUpdateSerializer, RecipePurchaseSerializer,
-                          SpecificUserSerializer, TagSerializer,
+                          TagSerializer,
                           UserLoginSerializers, UserSerializer)
 
 
@@ -31,42 +29,20 @@ def login_api(request):
     })
 
 
-@api_view(['GET']) 
-def user_personal_page(request): 
-    user = request.user
-    if user.is_authenticated:
-        if Follow.objects.filter(user=user, author=user):
-            return Response({'error': 'subscirption_is_wrong'}, status=400)
-        else:
-            is_subscribed = "False"
-        return Response({
-            'email': user.email,
-            'id': user.id,
-            'username': user.username,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'is_subscirbed': is_subscribed,
-            })
-    return Response({'error': 'not authenticted'}, status=400)
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    filter_backends = (filters.SearchFilter,)
+    lookup_field = 'id'
+    search_fields = ('id',)
 
-
-class SpecificUserViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
-
-    def get_object(self, pk):
-        try:
-            return User.objects.get(id=pk)
-        except User.DoesNotExist:
-            raise Http404
-
-    def get(self, request, pk):
-        user = request.user
-        if user.is_authenticated:
-            rev_user = self.get_object(pk)
-            serializer = SpecificUserSerializer(
-                rev_user, context={'request': request}
-                )
-            return Response(serializer.data)
+    @action(methods=('GET',),
+            url_path='me',
+            detail=False,)
+    def me(self, request, *args, **kwargs):
+        self.object = get_object_or_404(User, pk=request.user.id)
+        serializer = self.get_serializer(self.object)
+        return Response(serializer.data)
 
 
 class ChangePasswordViewSet(viewsets.ModelViewSet):
@@ -74,27 +50,16 @@ class ChangePasswordViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     permission_classes = (IsAuthenticated,)
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request):
         user = request.user
         serializer = self.serializer_class(data=request.data)
-
-        if serializer.is_valid():
-            if user.password != serializer.data.get("current_password"):
-                return Response({"current_password": ["Wrong password."]},
-                                status=status.HTTP_400_BAD_REQUEST)
-            user.password = serializer.data.get("new_password")
-            user.save()
-            return HttpResponse(status=204)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    filter_backends = (filters.SearchFilter,)
-    lookup_field = 'id'
-    search_fields = ('id',)
+        serializer.is_valid(raise_exception=True)
+        if user.password != serializer.validated_data.get("current_password"):
+            return Response({"current_password": ["Wrong password."]},
+                            status=status.HTTP_400_BAD_REQUEST)
+        user.password = serializer.data.get("new_password")
+        user.save()
+        return HttpResponse(status=204)
 
 
 class SetPermissionsFiltersSearchFields(
@@ -111,9 +76,6 @@ class SetPermissionsFiltersSearchFields(
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-
-    def get_paginated_response(self, data):
-        return Response(data)
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
@@ -139,7 +101,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         bubbba = IngredientsAmount.objects.filter(
             recipes__recipe_cart__user=user).values(
                 'name__name', 'name__measurement_unit').annotate(
-                    amount=Sum('amount'))
+                    purchase_amount=Sum('amount'))
         response = FileResponse(
             bubbba,
             content_type="text/plain",
@@ -149,14 +111,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return response
 
 
-class ShoppingCartViewSet(viewsets.ModelViewSet):
-    queryset = PurchaseList.objects.all()
-    serializer_class = RecipePurchaseSerializer
-    permission_classes = (IsAuthenticated,)
-
+class Cart_And_FavoritesMixin:
     def create(self, request, **kwargs):
         recipe_id = kwargs.get('recipe_id')
-        recipe = Recipe.objects.get(id=recipe_id)
+        recipe = get_object_or_404(Recipe, id=recipe_id)
         PurchaseList.objects.create(user=request.user, recipe=recipe)
         data = self.serializer_class(recipe).data
         return Response(data, status=status.HTTP_200_OK)
@@ -164,32 +122,22 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
     def delete(self, request, **kwargs):
         recipe_id = kwargs.get('recipe_id')
         user = request.user
-        recipe = Recipe.objects.get(id=recipe_id)
+        recipe = get_object_or_404(Recipe, id=recipe_id)
         cart = PurchaseList.objects.filter(user=user, recipe=recipe)
         cart.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class FavoriteViewSet(viewsets.ModelViewSet):
-    queryset = Favorites.objects.all()
+class ShoppingCartViewSet(Cart_And_FavoritesMixin, viewsets.ModelViewSet):
+    queryset = PurchaseList.objects.all()
     serializer_class = RecipePurchaseSerializer
     permission_classes = (IsAuthenticated,)
 
-    def create(self, request, **kwargs):
-        recipe_id = kwargs.get('recipe_id')
-        recipe = Recipe.objects.get(id=recipe_id)
-        user = request.user
-        Favorites.objects.create(user=user, recipe=recipe)
-        data = self.serializer_class(recipe).data
-        return Response(data, status=status.HTTP_200_OK)
 
-    def delete(self, request, **kwargs):
-        recipe_id = kwargs.get('recipe_id')
-        user = request.user
-        recipe = Recipe.objects.get(id=recipe_id)
-        f_recipe = Favorites.objects.filter(user=user, recipe=recipe)
-        f_recipe.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+class FavoriteViewSet(Cart_And_FavoritesMixin, viewsets.ModelViewSet):
+    queryset = Favorite.objects.all()
+    serializer_class = RecipePurchaseSerializer
+    permission_classes = (IsAuthenticated,)
 
 
 class FollowViewSet(viewsets.ModelViewSet):
@@ -199,7 +147,7 @@ class FollowViewSet(viewsets.ModelViewSet):
 
     def create(self, request, **kwargs):
         user_id = kwargs.get('user_id')
-        author = User.objects.get(id=user_id)
+        author = get_object_or_404(User, id=user_id)
         user = request.user
         Follow.objects.create(user=user, author=author)
         data = self.serializer_class(
@@ -214,7 +162,7 @@ class FollowViewSet(viewsets.ModelViewSet):
     def delete(self, request, **kwargs):
         user_id = kwargs.get('user_id')
         user = request.user
-        author = User.objects.get(id=user_id)
+        author = get_object_or_404(User, id=user_id)
         follower = Follow.objects.filter(user=user, author=author)
         follower.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

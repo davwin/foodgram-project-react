@@ -1,8 +1,3 @@
-# я не доделал пару штрихов (пермишны и фильтры),
-# просто т.к. я в университете-2035, а в связи с последними
-# событиями сбился по графику. А сдать нужно до 7го ноября,
-# поэтому буду благодарен за любую помощь. Спасибо!
-import datetime
 import re
 
 from colorfield.fields import ColorField
@@ -18,7 +13,7 @@ REGEX = re.compile(r'^[\w.@+-]+\Z')
 
 
 def username_validator(value):
-    if value == 'me':
+    if value.lower() == 'me':
         raise ValidationError(
             USERNAME_ME_ERROR
         )
@@ -27,10 +22,6 @@ def username_validator(value):
             INVALID_CHARACTER_ERR
         )
     return value
-
-
-def current_year():
-    return datetime.date.today().year
 
 
 class User(AbstractUser):
@@ -76,28 +67,30 @@ class User(AbstractUser):
 
 
 class Tag(models.Model):
-    name = models.CharField(max_length=200, unique=True)
-    slug = models.SlugField(unique=True)
-    color = ColorField(unique=True, default='#49B64E')
-
-    def __str__(self):
-        return self.name
+    name = models.CharField(max_length=200, unique=True, verbose_name='Тэг')
+    slug = models.SlugField(unique=True, verbose_name='Слаг')
+    color = ColorField(unique=True, default='#49B64E', verbose_name='Цвет')
 
     class Meta:
         verbose_name = 'Тэг'
         verbose_name_plural = 'Тэги'
 
-
-class Ingredient(models.Model):
-    name = models.CharField(max_length=200, unique=True)
-    measurement_unit = models.CharField(max_length=200)
-
     def __str__(self):
         return self.name
+
+
+class Ingredient(models.Model):
+    name = models.CharField(max_length=200, unique=True,
+                            verbose_name='Ингредиент')
+    measurement_unit = models.CharField(max_length=200,
+                                        verbose_name='Мера измерения')
 
     class Meta:
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
+
+    def __str__(self):
+        return self.name
 
 
 class IngredientsAmount(models.Model):
@@ -111,39 +104,42 @@ class IngredientsAmount(models.Model):
         verbose_name='Количество',
     )
 
-    def __str__(self):
-        return f'{self.name} - {self.amount}'
-
     class Meta:
         verbose_name = 'Кол-во ингредиентов'
         verbose_name_plural = 'Кол-во ингредиентов'
 
+    def __str__(self):
+        return f'{self.name} - {self.amount}'
+
 
 class Recipe(models.Model):
     author = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='recipe')
-    name = models.CharField(max_length=200)
+        User, on_delete=models.CASCADE, related_name='recipe',
+        verbose_name='Автор')
+    name = models.CharField(max_length=200, verbose_name='Название рецепта')
     image = models.ImageField(
-        upload_to='foods/')
-    text = models.TextField()
+        upload_to='foods/', verbose_name='Фото блюда')
+    text = models.TextField(verbose_name='Описание блюда')
     pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
     tags = models.ManyToManyField(
         Tag,
-        related_name="recipe")
-    cooking_time = models.DecimalField(max_digits=2, decimal_places=0)
+        related_name='recipe',
+        verbose_name='Тэги')
+    cooking_time = models.DecimalField(max_digits=2, decimal_places=0,
+                                       verbose_name='Время готовки')
     ingredients = models.ManyToManyField(
         'IngredientsAmount',
         related_name='recipes',
         verbose_name='Ингредиенты'
     )
 
-    def __str__(self):
-        return self.name
-
     class Meta:
         ordering = ('-pub_date', )
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
+
+    def __str__(self):
+        return self.name
 
 
 class Follow(models.Model):
@@ -160,8 +156,18 @@ class Follow(models.Model):
         verbose_name='Автор рецепта'
     )
 
+    class Meta:
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
+        constraints = [
+            models.UniqueConstraint(
+                fields=('user', 'author'),
+                name='unique_follow_user_author'
+            )
+        ]
 
-class Favorites(models.Model):
+
+class Favorite(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,

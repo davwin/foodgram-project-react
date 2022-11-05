@@ -2,9 +2,9 @@ from django.db import transaction
 from django.db.models import Q
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
-from rest_framework.validators import UniqueValidator
 
-from foods.models import (Favorites, Follow, Ingredient, IngredientsAmount,
+
+from foods.models import (Favorite, Follow, Ingredient, IngredientsAmount,
                           PurchaseList, Recipe, Tag, User, username_validator)
 
 
@@ -67,7 +67,8 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         current_user = self.context['request'].user.id
-        return Follow.objects.filter(user_id=current_user, author_id=obj.id).exists()
+        return Follow.objects.filter(
+            user_id=current_user, author_id=obj.id).exists()
 
     def create(self, validated_data):
         user = User.objects.create(
@@ -96,7 +97,8 @@ class SpecificUserSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         current_user = self.context['request'].user.id
-        return Follow.objects.filter(user_id=current_user, author_id=obj.id).exists()
+        return Follow.objects.filter(
+            user_id=current_user, author_id=obj.id).exists()
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -188,7 +190,7 @@ class RecipeListRetrieveSerializer(serializers.ModelSerializer):
         if self.context['request'].auth is None:
             return False
         user = self.context['request'].user
-        return Favorites.objects.filter(
+        return Favorite.objects.filter(
             user=user,
             recipe=recipe,
         ).exists()
@@ -214,11 +216,6 @@ class RecipePostUpdateSerializer(serializers.ModelSerializer):
         read_only=False,
         many=True,
         required=True,
-        validators=(UniqueValidator(
-            queryset=Ingredient.objects.all(),
-            message='Нельзя использовать одинаковые ингредиенты',
-            ),
-        ),
     )
     is_favorited = serializers.SerializerMethodField(
         method_name='get_is_favorited',
@@ -231,6 +228,15 @@ class RecipePostUpdateSerializer(serializers.ModelSerializer):
     text = serializers.CharField(required=True)
     cooking_time = serializers.IntegerField(required=True)
     author = SpecificUserSerializer(read_only=True, many=False)
+
+    def validate_ingredients(self, value):
+        arr = []
+        for name in range(len(value)):
+            arr.append(value[name]['name'])
+        myunique = set(arr)
+        if len(myunique) != len(arr):
+            raise serializers.ValidationError('Ошибка-одинаковые ингредиенты.')
+        return value
 
     class Meta:
         model = Recipe
@@ -251,7 +257,7 @@ class RecipePostUpdateSerializer(serializers.ModelSerializer):
         if self.context['request'].auth is None:
             return False
         user = self.context['request'].user
-        return Favorites.objects.filter(
+        return Favorite.objects.filter(
             user=user,
             recipe=recipe,
         ).exists()
@@ -265,6 +271,18 @@ class RecipePostUpdateSerializer(serializers.ModelSerializer):
             recipe=recipe,
         ).exists()
 
+    def add_or_edit_ingredients(self, recipe, ingredients):
+        max_id = int(IngredientsAmount.objects.latest('pk').pk)
+        ingredient_amount = [
+            IngredientsAmount(name=ingredient['name'],
+                              amount=ingredient['amount'],
+                              ) for ingredient in ingredients]
+        ingredient_amount = IngredientsAmount.objects.bulk_create(
+            ingredient_amount)
+        for i in range(1, (len(ingredients)+1)):
+            recipe.ingredients.add(max_id+i)
+        recipe.save()
+
     @transaction.atomic
     def create(self, validated_data):
         tags = validated_data.pop('tags')
@@ -272,36 +290,20 @@ class RecipePostUpdateSerializer(serializers.ModelSerializer):
         author = self.context['request'].user
         validated_data['author'] = author
         recipe = Recipe.objects.create(**validated_data)
-
         for tag in tags:
             recipe.tags.add(tag)
-
-        for ingredient in ingredients:
-            ingredient_amount = IngredientsAmount.objects.create(
-                name=ingredient['name'],
-                amount=ingredient['amount'],
-            )
-            ingredient_amount_id = ingredient_amount.id
-            recipe.ingredients.add(ingredient_amount_id)
+        self.add_or_edit_ingredients(recipe, ingredients)
         return recipe
 
     @transaction.atomic
     def update(self, instance, validated_data):
         tags_list = validated_data.pop('tags')
-        ingredients_list = validated_data.pop('ingredients')
-
+        ingredients = validated_data.pop('ingredients')
         super().update(instance, validated_data)
         recipe = instance
-
         recipe.tags.set(tags_list)
-
         recipe.ingredients.clear()
-        for ingredient in ingredients_list:
-            ingredient_amount = IngredientsAmount.objects.create(
-                **ingredient
-            )
-            recipe.ingredients.add(ingredient_amount.id)
-        recipe.save()
+        self.add_or_edit_ingredients(recipe, ingredients)
         return recipe
 
 
@@ -342,7 +344,8 @@ class FollowSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         current_user = self.context['request'].user.id
-        return Follow.objects.filter(user_id=current_user, author_id=obj.id).exists()
+        return Follow.objects.filter(
+            user_id=current_user, author_id=obj.id).exists()
 
     def get_recipes(self, user):
         recipes_limit = self.context.get('request').query_params.get(
