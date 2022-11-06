@@ -1,24 +1,25 @@
-import csv
+import json
+import os
 
 from django.conf import settings
 from django.core.management import BaseCommand
-from foods.models import Ingredients
+from foods.models import Ingredient
 
-TABLES_DICT = {
-    Ingredients: 'ingredients.csv',
-}
+INGREDIENTS_CSV = 'ingredients.csv'
+INGREDIENTS_JSON = 'ingredients.json'
+
+data_path = settings.BASE_DIR
+path = os.path.join(data_path, INGREDIENTS_JSON)
 
 
 class Command(BaseCommand):
-    help = 'Load data from csv files'
+    help = 'Загрузка ингредиентов в БД из файла'
 
-    def handle(self, *args, **kwargs):
-        for model, base in TABLES_DICT.items():
-            with open(
-                f'{settings.BASE_DIR}/data/{base}',
-                'r', encoding='utf-8'
-            ) as csv_file:
-                reader = csv.DictReader(csv_file, delimiter=',')
-                model.objects.bulk_create(model(**data) for data in reader)
+    def handle(self, *args, **options):
+        path = os.path.join(data_path, INGREDIENTS_JSON)
+        Ingredient.objects.all().delete()
 
-        self.stdout.write(self.style.SUCCESS('Successfully load data'))
+        with open(path, 'r', encoding='utf-8') as f:
+            Ingredient.objects.bulk_create(
+                objs=[Ingredient(**x) for x in json.load(f)]
+            )
