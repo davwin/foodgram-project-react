@@ -1,6 +1,6 @@
 # praktikum_new_diplom
 178.154.204.59
-login: admin
+login: admin@admin.ru
 password: twj10mv
 
 

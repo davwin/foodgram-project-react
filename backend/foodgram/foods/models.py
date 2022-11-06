@@ -90,7 +90,7 @@ class Ingredient(models.Model):
         verbose_name_plural = 'Ингредиенты'
 
     def __str__(self):
-        return self.name
+        return str(self.id)
 
 
 class IngredientsAmount(models.Model):

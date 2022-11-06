@@ -133,7 +133,6 @@ class IngredientAmountCreateUpdateSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(
         many=False,
         read_only=False,
-        source='name',
         queryset=Ingredient.objects.all(),
     )
 
@@ -218,14 +217,14 @@ class RecipePostUpdateSerializer(serializers.ModelSerializer):
     cooking_time = serializers.IntegerField(required=True)
     author = SpecificUserSerializer(read_only=True, many=False)
 
-    def validate_ingredients(self, value):
+    def validate_ingredients(self, id):
         ingredients = []
-        for ingredient in value:
-            ingredients.append(ingredient['name'])
+        for ingredient in id:
+            ingredients.append(ingredient['id'])
         ingredients_set = set(ingredients)
         if len(ingredients_set) != len(ingredients):
             raise serializers.ValidationError('Ошибка-одинаковые ингредиенты.')
-        return value
+        return id
 
     class Meta:
         model = Recipe
@@ -268,8 +267,8 @@ class RecipePostUpdateSerializer(serializers.ModelSerializer):
                               ) for ingredient in ingredients]
         ingredient_amount = IngredientsAmount.objects.bulk_create(
             ingredient_amount)
-        for i in range(len(ingredients)):
-            recipe.ingredients.add(ingredient_amount[i].recipe)
+        for ingredient in ingredient_amount:
+            recipe.ingredients.add(ingredient.recipe)
         recipe.save()
 
     @transaction.atomic
