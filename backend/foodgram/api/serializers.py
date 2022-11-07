@@ -193,13 +193,16 @@ class RecipeListRetrieveSerializer(serializers.ModelSerializer):
         ).exists()
 
 
+class CustomTagsSerializer(serializers.ListField):
+    def to_representation(self, data):
+        tags_list = self.context['request']._data['tags']
+        obj = Tag.objects.filter(id__in=tags_list)
+        serializer = TagSerializer(obj, many=True)
+        return serializer.data
+
+
 class RecipePostUpdateSerializer(serializers.ModelSerializer):
-    tags = serializers.PrimaryKeyRelatedField(
-        many=True,
-        read_only=False,
-        queryset=Tag.objects.all(),
-        required=True,
-    )
+    tags = CustomTagsSerializer()
     ingredients = IngredientAmountCreateUpdateSerializer(
         read_only=False,
         many=True,
@@ -259,9 +262,13 @@ class RecipePostUpdateSerializer(serializers.ModelSerializer):
             recipe=recipe,
         ).exists()
 
+    def add_tags(self, tags, recipe):
+        for tag in tags:
+            recipe.tags.add(tag)
+
     def add_or_edit_ingredients(self, recipe, ingredients):
         ingredient_amount = [
-            IngredientsAmount(name=ingredient['name'],
+            IngredientsAmount(name=ingredient['id'],
                               amount=ingredient['amount'],
                               recipe=recipe.id
                               ) for ingredient in ingredients]
@@ -278,8 +285,7 @@ class RecipePostUpdateSerializer(serializers.ModelSerializer):
         author = self.context['request'].user
         validated_data['author'] = author
         recipe = Recipe.objects.create(**validated_data)
-        for tag in tags:
-            recipe.tags.add(tag)
+        self.add_tags(tags, recipe)
         self.add_or_edit_ingredients(recipe, ingredients)
         return recipe
 
@@ -293,6 +299,12 @@ class RecipePostUpdateSerializer(serializers.ModelSerializer):
         recipe.ingredients.clear()
         self.add_or_edit_ingredients(recipe, ingredients)
         return recipe
+
+    def to_representation(self, recipe):
+        request = self.context.get('request')
+        context = {'request': request}
+        return RecipeListRetrieveSerializer(recipe,
+                                            context=context).data
 
 
 class RecipePurchaseSerializer(serializers.ModelSerializer):

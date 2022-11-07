@@ -76,7 +76,7 @@ class Tag(models.Model):
         verbose_name_plural = 'Тэги'
 
     def __str__(self):
-        return self.name
+        return f'{self.id} - {self.name} - {self.color} - {self.slug}'
 
 
 class Ingredient(models.Model):
@@ -103,7 +103,7 @@ class IngredientsAmount(models.Model):
     amount = models.PositiveSmallIntegerField(
         verbose_name='Количество',
     )
-    recipe = models.PositiveIntegerField(unique=True, null=False)
+    recipe = models.PositiveIntegerField(unique=False, null=False)
 
     class Meta:
         verbose_name = 'Кол-во ингредиентов'
