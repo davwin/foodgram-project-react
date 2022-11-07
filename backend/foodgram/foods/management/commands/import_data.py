@@ -21,5 +21,5 @@ class Command(BaseCommand):
 
         with open(path, 'r', encoding='utf-8') as f:
             Ingredient.objects.bulk_create(
-                objs=[Ingredient(**x) for x in json.load(f)]
+                objs=[Ingredient(**x) for x in json.load(f)], ignore_conflicts=True
             )
