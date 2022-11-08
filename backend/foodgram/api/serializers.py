@@ -109,7 +109,11 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class IngredientAmountListRetrieveSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(source='name.id')
+    id = serializers.PrimaryKeyRelatedField(
+        many=False,
+        read_only=False,
+        queryset=Ingredient.objects.all(),
+    )
     name = serializers.SlugRelatedField(
         slug_field='name',
         read_only=True,
@@ -131,8 +135,6 @@ class IngredientAmountListRetrieveSerializer(serializers.ModelSerializer):
 
 class IngredientAmountCreateUpdateSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(
-        many=False,
-        read_only=False,
         queryset=Ingredient.objects.all(),
     )
 
@@ -150,6 +152,7 @@ class RecipeListRetrieveSerializer(serializers.ModelSerializer):
     ingredients = IngredientAmountListRetrieveSerializer(
         read_only=True,
         many=True,
+        source='ingredient_amounts'
     )
     is_favorited = serializers.SerializerMethodField(
         method_name='get_is_favorited',
@@ -204,9 +207,7 @@ class CustomTagsSerializer(serializers.ListField):
 class RecipePostUpdateSerializer(serializers.ModelSerializer):
     tags = CustomTagsSerializer()
     ingredients = IngredientAmountCreateUpdateSerializer(
-        read_only=False,
         many=True,
-        required=True,
     )
     is_favorited = serializers.SerializerMethodField(
         method_name='get_is_favorited',
@@ -267,16 +268,13 @@ class RecipePostUpdateSerializer(serializers.ModelSerializer):
             recipe.tags.add(tag)
 
     def add_or_edit_ingredients(self, recipe, ingredients):
-        ingredient_amount = [
-            IngredientsAmount(name=ingredient['id'],
-                              amount=ingredient['amount'],
-                              recipe=recipe.id
-                              ) for ingredient in ingredients]
-        ingredient_amount = IngredientsAmount.objects.bulk_create(
-            ingredient_amount)
-        for ingredient in ingredient_amount:
-            recipe.ingredients.add(ingredient.recipe)
-        recipe.save()
+        IngredientsAmount.objects.bulk_create(
+            [IngredientsAmount(
+                recipe=recipe,
+                name=ingredient['id'],
+                amount=ingredient['amount'],
+            ) for ingredient in ingredients]
+        )
 
     @transaction.atomic
     def create(self, validated_data):
