@@ -93,26 +93,6 @@ class Ingredient(models.Model):
         return str(self.id)
 
 
-class IngredientsAmount(models.Model):
-    name = models.ForeignKey(
-        Ingredient,
-        on_delete=models.CASCADE,
-        related_name='ingredients',
-        verbose_name='Ингрединты',
-    )
-    amount = models.PositiveSmallIntegerField(
-        verbose_name='Количество',
-    )
-    recipe = models.PositiveIntegerField(unique=False, null=False)
-
-    class Meta:
-        verbose_name = 'Кол-во ингредиентов'
-        verbose_name_plural = 'Кол-во ингредиентов'
-
-    def __str__(self):
-        return f'{self.name} - {self.amount} - {self.recipe}'
-
-
 class Recipe(models.Model):
     author = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='recipe',
@@ -129,7 +109,8 @@ class Recipe(models.Model):
     cooking_time = models.DecimalField(max_digits=2, decimal_places=0,
                                        verbose_name='Время готовки')
     ingredients = models.ManyToManyField(
-        'IngredientsAmount',
+        Ingredient,
+        through='IngredientsAmount',
         related_name='recipes',
         verbose_name='Ингредиенты'
     )
@@ -141,6 +122,31 @@ class Recipe(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class IngredientsAmount(models.Model):
+    name = models.ForeignKey(
+        Ingredient,
+        on_delete=models.CASCADE,
+        related_name='ingredient_amounts',
+        verbose_name='Ингрединты',
+    )
+    amount = models.PositiveSmallIntegerField(
+        verbose_name='Количество',
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        related_name='ingredient_amounts',
+        verbose_name='Название рецепта',
+        on_delete=models.CASCADE,
+        help_text='Выберите рецепт')
+
+    class Meta:
+        verbose_name = 'Кол-во ингредиентов'
+        verbose_name_plural = 'Кол-во ингредиентов'
+
+    def __str__(self):
+        return f'{self.name} - {self.amount} - {self.recipe}'
 
 
 class Follow(models.Model):
