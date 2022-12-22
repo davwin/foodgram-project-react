@@ -84,7 +84,9 @@ jobs:
             sudo rm -f .env        
             sudo touch .env
             sudo chmod 666 .env
-            
+
+            sudo docker-compose down
+
             sudo docker-compose rm backend
             sudo docker-compose pull backend
             sudo docker-compose rm frontend
@@ -97,7 +99,5 @@ jobs:
             sudo echo POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} >> .env
             sudo echo DB_HOST=${{ secrets.DB_HOST }} >> .env
             sudo echo DB_PORT=${{ secrets.DB_PORT }} >> .env
-            
 
-        
             sudo docker-compose up -d
