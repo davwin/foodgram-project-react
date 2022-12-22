@@ -6,9 +6,9 @@ from .views import (ChangePasswordViewSet, FollowViewSet,
                     IngredientViewSet, RecipeViewSet, ShoppingCartViewSet,
                     TagViewSet, UserViewSet, login_api)
 
-app_name = 'api'
+app_name='api'
 
-router_v1 = routers.DefaultRouter()
+router_v1=routers.DefaultRouter()
 
 router_v1.register(r'users/set_password', ChangePasswordViewSet, basename = 'set_password')
 router_v1.register(r'users/subscriptions', FollowViewSet, basename = 'subscriptions')
@@ -22,7 +22,7 @@ router_v1.register(r'tags', TagViewSet, basename = 'tags')
 
 router_v1.register(r'ingredients', IngredientViewSet, basename = 'ingredients')
 
-urlpatterns = [
+urlpatterns=[
     path('', include(router_v1.urls)),
     path('auth/token/login/', login_api),
     path('auth/token/logout/', knox_views.LogoutView.as_view()),
