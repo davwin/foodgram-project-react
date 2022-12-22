@@ -1,5 +1,6 @@
 from django.contrib import auth
-from django.db import transaction, models
+from django.db import transaction
+from django.db import models
 from drf_extra_fields.fields import Base64ImageField
 from foods.models import (Favorite, Follow, Ingredient, IngredientsAmount,
                           PurchaseList, Recipe, Tag, username_validator)
