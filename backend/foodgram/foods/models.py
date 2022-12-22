@@ -106,7 +106,7 @@ class Recipe(models.Model):
         Tag,
         related_name='recipe',
         verbose_name='Тэги')
-    cooking_time=models.PositiveSmallIntegerField(
+    cooking_time = models.PositiveSmallIntegerField(
         verbose_name='Время готовки',
         default=0,
     )
@@ -118,7 +118,7 @@ class Recipe(models.Model):
     )
 
     class Meta:
-        ordering = ('-pub_date', )
+        ordering = ('-pub_date',)
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
 
@@ -134,14 +134,14 @@ class IngredientsAmount(models.Model):
         on_delete=models.CASCADE,
         help_text='Выберите рецепт')
 
-    ingredients=models.ForeignKey(
+    ingredients = models.ForeignKey(
         verbose_name='Связанные ингредиенты',
         related_name='recipe',
         to=Ingredient,
         on_delete=models.CASCADE
     )
 
-    amount=models.PositiveSmallIntegerField(
+    amount = models.PositiveSmallIntegerField(
         verbose_name='Количество',
     )
 
@@ -216,9 +216,8 @@ class PurchaseList(models.Model):
     )
 
     class Meta:
-        constraints = (
-            models.UniqueConstraint(
-                fields=('user', 'recipe',), name='unique_shopping_cart')),
+        constraints = (models.UniqueConstraint(fields=('user', 'recipe',),
+                                               name='unique_shopping_cart')),
 
     def __str__(self):
         return f'{self.user} - {self.recipe}'
