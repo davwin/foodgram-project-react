@@ -85,9 +85,6 @@ jobs:
             sudo touch .env
             sudo chmod 666 .env
 
-            sudo docker-compose down
-            docker stop $(docker ps -a -q)
-
             sudo docker-compose rm backend
             sudo docker-compose pull backend
             sudo docker-compose rm frontend
