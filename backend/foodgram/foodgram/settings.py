@@ -9,16 +9,20 @@ DEBUG = os.environ.get('DEBUG', default=True)
 ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
+    # DJANGO
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
+    # VENDOR
     'rest_framework',
     'knox',
     'django_filters',
     'colorfield',
+    # APP
     'foodgram',
     'foods',
     'api',
