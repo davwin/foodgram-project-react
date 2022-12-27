@@ -91,6 +91,11 @@ jobs:
             sudo docker-compose pull frontend
             sudo docker-compose stop
 
+            sudo docker-compose exec backend python3 manage.py collectstatic --no-input
+            sudo docker-compose exec backend python3 manage.py migrate
+            sudo docker-compose exec backend python3 manage.py import_data
+            sudo docker-compose exec backend python3 manage.py createsuperuser --noinput --username ${{secrets.DJANGO_SUPERUSER_USERNAME}} --email ${{secrets.DJANGO_SUPERUSER_EMAIL}} --password ${{secrets.DJANGO_SUPERUSER_PASSWORD}}            
+
             sudo echo DB_ENGINE=${{ secrets.DB_ENGINE }} >> .env
             sudo echo DB_NAME=${{ secrets.DB_NAME }} >> .env
             sudo echo POSTGRES_USER=${{ secrets.POSTGRES_USER }} >> .env
