@@ -1,7 +1,7 @@
 # praktikum_new_diplom
-178.154.204.59
-login: admin@admin.ru
-password: twj10mv
+http://158.160.38.118/signin
+ivan@mail.ru
+123123
 
 
 ![foodgram_workflow](https://github.com/davwin/foodgram-project-react/actions/workflows/foodgram_workflow.yml/badge.svg)
