@@ -1,5 +1,6 @@
 from django.contrib import auth
 from django.db import models, transaction
+from django.utils.translation import gettext_lazy as _
 from drf_extra_fields.fields import Base64ImageField
 from foods.models import (Favorite, Follow, Ingredient, IngredientsAmount,
                           PurchaseList, Recipe, Tag, username_validator)
@@ -202,7 +203,13 @@ class RecipePostUpdateSerializer(serializers.ModelSerializer):
     image = Base64ImageField(required=True)
     name = serializers.CharField(required=True)
     text = serializers.CharField(required=True)
-    cooking_time = serializers.IntegerField(required=True)
+    cooking_time = serializers.IntegerField(
+        required=True, min_value=1, max_value=999, error_messages={
+            'invalid': "Введите корректное число",
+            'max_value': "Значение слишком большое",
+            'min_value': "Необходимо ввести положительное число",
+            'max_string_length': _('String value too large.')
+        })
     author = SpecificUserSerializer(read_only=True, many=False)
 
     def validate_ingredients(self, id):
@@ -359,7 +366,7 @@ class FollowSerializer(serializers.ModelSerializer):
                 follow_or_follow_user,
                 User
             )
-            else follow_or_follow_user.user.id
+            else follow_or_follow_user.author.id
         ).exists()
 
     def get_recipes(self, follow_or_follow_user):
@@ -372,7 +379,7 @@ class FollowSerializer(serializers.ModelSerializer):
                 follow_or_follow_user,
                 User
             )
-            else follow_or_follow_user.user.id
+            else follow_or_follow_user.author.id
         )
 
         if recipes_limit is not None:
