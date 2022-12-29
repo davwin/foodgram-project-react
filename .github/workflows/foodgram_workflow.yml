@@ -94,7 +94,7 @@ jobs:
             sudo docker-compose exec backend python3 manage.py collectstatic --no-input
             sudo docker-compose exec backend python3 manage.py --settings=foodgram.settings.migrate makemigrations
             sudo docker-compose exec backend python3 manage.py --settings=foodgram.settings.migrate migrate
-            sudo docker-compose exec backend python3 manage.py import_data
+            # sudo docker-compose exec backend python3 manage.py import_data
             sudo docker-compose exec backend python3 manage.py createsuperuser --noinput --username ${{secrets.DJANGO_SUPERUSER_USERNAME}} --email ${{secrets.DJANGO_SUPERUSER_EMAIL}} --password ${{secrets.DJANGO_SUPERUSER_PASSWORD}}            
 
             sudo echo DB_ENGINE=${{ secrets.DB_ENGINE }} >> .env
