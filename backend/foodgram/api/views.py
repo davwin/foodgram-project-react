@@ -147,8 +147,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def download_shopping_cart(self, request):
         user = request.user
         bubbba = IngredientsAmount.objects.filter(
-            recipes__recipe_cart__user=user).values(
-            'name__name', 'name__measurement_unit').annotate(
+            recipe__recipe_cart__user=user).values(
+            'recipe__ingredients__name').annotate(
             purchase_amount=Sum('amount'))
         return FileResponse(
             bubbba,
