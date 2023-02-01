@@ -128,13 +128,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
             if is_in_shopping is not None:
                 self.queryset = self.queryset.filter(
-                    recipe_cart__isnull=is_in_shopping not in true_condition
+                    recipe_cart__isnull=is_in_shopping not in true_condition,
+                    recipe_cart__user=self.request.user
                 )
 
             is_favorited = self.request.query_params.get('is_favorited')
             if is_favorited is not None:
                 self.queryset = self.queryset.filter(
-                    favorite__isnull=is_favorited not in true_condition
+                    favorite__isnull=is_favorited not in true_condition,
+                    favorite__user=self.request.user
                 )
 
         return self.queryset

@@ -1,4 +1,5 @@
 from django.contrib import auth
+from django.core.paginator import Paginator
 from django.db import models, transaction
 from django.utils.translation import gettext_lazy as _
 from drf_extra_fields.fields import Base64ImageField
@@ -383,7 +384,9 @@ class FollowSerializer(serializers.ModelSerializer):
         )
 
         if recipes_limit is not None:
-            recipes = recipes[:int(recipes_limit)]
+            paginator = Paginator(recipes, per_page=recipes_limit)
+            page = paginator.get_page(self.context.get('request').query_params.get('page', 1))
+            recipes = page.object_list
 
         serializer = RecipePurchaseSerializer(
             recipes,
@@ -392,5 +395,14 @@ class FollowSerializer(serializers.ModelSerializer):
         )
         return serializer.data
 
-    def get_recipes_count(self, obj):
-        return Recipe.objects.filter(author_id=obj.id).count()
+    def get_recipes_count(self, follow_or_follow_user):
+        recipes = Recipe.objects.filter(
+            author=follow_or_follow_user.id
+            if isinstance(
+                follow_or_follow_user,
+                User
+            )
+            else follow_or_follow_user.author.id
+        )
+
+        return recipes.count()
