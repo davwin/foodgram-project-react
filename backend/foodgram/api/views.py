@@ -232,5 +232,4 @@ class FollowViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def get_queryset(self):
-        queryset = self.queryset.filter(user=self.request.user)
-        return queryset
+        return self.queryset.filter(user=self.request.user)
