@@ -114,3 +114,5 @@ REST_FRAMEWORK = {
 
 
 AUTH_USER_MODEL = 'foods.User'
+
+DJANGO_SUPERUSER_PASSWORD = os.environ.get('DJANGO_SUPERUSER_PASSWORD', default='admin')
