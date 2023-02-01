@@ -385,7 +385,9 @@ class FollowSerializer(serializers.ModelSerializer):
 
         if recipes_limit is not None:
             paginator = Paginator(recipes, per_page=recipes_limit)
-            page = paginator.get_page(self.context.get('request').query_params.get('page', 1))
+            page = paginator.get_page(
+                self.context.get('request').query_params.get('page', 1)
+            )
             recipes = page.object_list
 
         serializer = RecipePurchaseSerializer(
