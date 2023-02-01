@@ -1,6 +1,7 @@
 from django.contrib import auth
 from django.core.paginator import Paginator
 from django.db import models, transaction
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from drf_extra_fields.fields import Base64ImageField
 from foods.models import (Favorite, Follow, Ingredient, IngredientsAmount,
@@ -362,7 +363,8 @@ class FollowSerializer(serializers.ModelSerializer):
     def get_is_subscribed(self, follow_or_follow_user):
         current_user = self.context['request'].user.id
         return Follow.objects.filter(
-            user_id=current_user, author_id=follow_or_follow_user.id
+            user_id=current_user,
+            author_id=follow_or_follow_user.id
             if isinstance(
                 follow_or_follow_user,
                 User
@@ -374,14 +376,16 @@ class FollowSerializer(serializers.ModelSerializer):
         recipes_limit = self.context.get('request').query_params.get(
             'recipes_limit'
         )
-        recipes = Recipe.objects.filter(
+        recipes = Recipe.objects.filter(Q(
             author=follow_or_follow_user.id
             if isinstance(
                 follow_or_follow_user,
                 User
             )
             else follow_or_follow_user.author.id
-        )
+        ) & ~Q(
+            author=self.context.get('request').user
+        ))
 
         if recipes_limit is not None:
             paginator = Paginator(recipes, per_page=recipes_limit)
@@ -399,12 +403,16 @@ class FollowSerializer(serializers.ModelSerializer):
 
     def get_recipes_count(self, follow_or_follow_user):
         recipes = Recipe.objects.filter(
-            author=follow_or_follow_user.id
-            if isinstance(
-                follow_or_follow_user,
-                User
+            Q(
+                author=follow_or_follow_user.id
+                if isinstance(
+                    follow_or_follow_user,
+                    User
+                )
+                else follow_or_follow_user.author.id
+            ) & ~Q(
+                author=self.context.get('request').user
             )
-            else follow_or_follow_user.author.id
         )
 
         return recipes.count()

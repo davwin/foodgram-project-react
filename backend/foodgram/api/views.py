@@ -108,6 +108,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipeListRetrieveSerializer
         return RecipePostUpdateSerializer
 
+    def paginate_queryset(self, queryset):
+        if self.paginator is not None:
+            self.paginator.page_size_query_param = 'limit'
+        return super(RecipeViewSet, self).paginate_queryset(queryset)
+
     def get_queryset(self):
         tags = self.request.query_params.getlist('tags')
         if tags:
@@ -225,3 +230,7 @@ class FollowViewSet(viewsets.ModelViewSet):
         follower = Follow.objects.filter(user=user, author=author)
         follower.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def get_queryset(self):
+        queryset = self.queryset.filter(user=self.request.user)
+        return queryset
